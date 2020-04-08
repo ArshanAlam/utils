@@ -12,3 +12,6 @@ Underscore Calculator (`_`) is a command line interface (CLI) calculator for bas
 
 ### simple-http-file-server
 A Node.js based simple HTTP static file server.
+
+### mount
+Scripts for mounting partition(s) to a mount directory in the users home directory.
