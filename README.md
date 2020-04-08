@@ -18,3 +18,6 @@ Scripts for mounting partition(s) to a mount directory in the users home directo
 
 ### ethernet-connection
 Connect to the internet through an ethernet connection.
+
+### bash-random
+A positive random number generator using Bash.
