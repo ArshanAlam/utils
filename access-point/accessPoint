@@ -1,0 +1,138 @@
+#!/bin/bash
+
+##
+##	Init script to start/stop/restart
+##	an access point on this machine.
+##
+
+
+## Constants
+
+SCRIPT_FILENAME="$(basename $0)"
+
+# Get the full path to this script
+ETHERNET_SCRIPT="$($(cd $(dirname $0)) && pwd)/$SCRIPT_FILENAME"
+
+WIRELESS_INTERFACE="$1"
+ETHERNET="$2"
+
+ACCESS_POINT=$WIRELESS_INTERFACE"_AP"
+BRIDGE=$ACCESS_POINT"_BR"
+HOSTAPD_CONFIG_FILE="/etc/hostapd/hostapd.conf"
+
+##
+##	usage
+##
+##	Print the usage/help information for this script.
+##
+function usage() {
+	echo ""
+	echo "  $SCRIPT_FILENAME"
+	echo ""
+	echo "  To configure the access point, please edit file"
+	echo "  $HOSTAPD_CONFIG_FILE"
+	echo ""
+	echo "  $SCRIPT_FILENAME <WIRELESS_INTERFACE> <ETHERNET_INTERFACE> start          Start access point"
+	echo "  $SCRIPT_FILENAME <WIRELESS_INTERFACE> <ETHERNET_INTERFACE> stop           Stop access point"
+	echo "  $SCRIPT_FILENAME <WIRELESS_INTERFACE> <ETHERNET_INTERFACE> restart        Restart access point"
+	echo ""
+}
+
+
+##
+##	start
+##
+##	Start access point
+##
+function start() {
+	## Restart the network connection on ethernet
+	echo "Restarting network connection on $ETHERNET"
+	$ETHERNET_SCRIPT restart
+
+	## Create the virtual interface for the access point.
+	echo "Creating virtual interface for access point"
+	iw dev $WIRELESS_INTERFACE interface add $ACCESS_POINT type __ap
+
+	## Set the access point interface to UP
+	echo "Setting access point interface $ACCESS_POINT to up"
+	ip link set dev $ACCESS_POINT up
+
+	## Create the bridge for the access point and ethernet
+	echo "Creating access point bridge $BRIDGE"
+	ip link add name $BRIDGE type bridge
+
+	## Set the bridge to be UP so a network connection could be established
+	echo "Setting $BRIDGE to UP to establish connection"
+	ip link set dev $BRIDGE up
+
+	## Add ethernet interface to bridge
+	echo "Adding ethernet interface $ETHERNET to bridge $BRIDGE"
+	ip link set $ETHERNET master $BRIDGE
+
+	## Start the access point as a background daemon
+	echo "Starting access point (hostapd client) as a background daemon"
+	hostapd -B $HOSTAPD_CONFIG_FILE
+
+	## ensure access point is created
+	if [ $? -ne 0 ]; then
+		echo ""
+		echo "Error occured when starting access point with hostapd"
+		exit -1
+	fi
+
+	echo ""
+	echo "Access point started"
+}
+
+##
+##	stop
+##
+##	Stop access point
+##
+function stop() {
+	## Remove the ethernet interface from the bridge
+	echo "Removing ethernet interface $ETHERNET from bridge $BRIDGE"
+	ip link set $ETHERNET nomaster
+
+	## Set the bridge connection to DOWN to stop connection
+	echo "Setting $BRIDGE to DOWN to stop network connection"
+	ip link set dev $BRIDGE down
+
+	## Kill all hostapd daemons
+	echo "stopping all hostapd daemons"
+	killall hostapd
+
+	## Stop the access point virtual interface
+	echo "Stopping access point virtual interface $ACCESS_POINT"
+	ip link set dev $ACCESS_POINT down
+
+	## Delete bridge virutal interface
+	## just in case the hostapd could not
+	echo "Deleting bridge $BRIDGE"
+	ip link delete dev $BRIDGE type bridge
+
+	## Delete access point virtual interface
+	echo "Deleting access point virtual interface $ACCESS_POINT"
+	iw dev $ACCESS_POINT del
+
+	## Restart the network connection on ethernet
+	echo "Restarting network connection on $ETHERNET"
+	$ETHERNET_SCRIPT restart
+}
+
+
+case "$3" in
+	"start")
+	start
+	;;
+	"stop")
+	stop
+	;;
+	"restart")
+	stop
+	start
+	;;
+	*)
+	usage
+	;;
+esac

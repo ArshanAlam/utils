@@ -21,3 +21,6 @@ Connect to the internet through an ethernet connection.
 
 ### bash-random
 A positive random number generator using Bash.
+
+# access-point
+Bash script for creating a wireless access point on a machine with an ethernet connection.
