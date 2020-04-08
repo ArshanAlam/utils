@@ -9,3 +9,6 @@ Creates a temporary 1GB swap file.
 
 ### underscore
 Underscore Calculator (`_`) is a command line interface (CLI) calculator for basic arithmetics (`+`, `-`, `*`, `/`), using double-precision floating point numbers.
+
+### simple-http-file-server
+A Node.js based simple HTTP static file server.
