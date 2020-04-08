@@ -1,0 +1,80 @@
+#!/bin/bash
+
+##
+## Author:	Arshan Alam
+##
+## Date:	20170430
+##
+## Connect to the internet through an ethernet connection.
+
+#Constants
+ETHERNET="$2"
+
+# If the ethernet interface name is no provided then set it to
+# be the default interface assigned below
+if [ -z "$ETHERNET" ]; then
+	ETHERNET="eth0"
+fi
+
+##
+##	usage
+##
+##	Print the usage/help of this script.
+##
+function usage() {
+	echo ""
+	echo "  $0 <command> [interface]"
+	echo ""
+	echo "  Create a network connection through the ethernet interface."
+	echo ""
+	echo "  $0 start         Start ethernet connection"
+	echo "  $0 stop          Stop ethernet connection"
+	echo "  $0 restart       Restart ethernet connection"
+	echo ""
+}
+
+##
+##	start
+##
+##	Start ethernet connection using dhcpcd client
+##
+function start() {
+	## Set the ethernet interface to UP
+	echo "Setting interface $ETHERNET to UP"
+	ip link set dev $ETHERNET up
+
+	## Connect the ethernet interface to the dhcp server
+	echo "Connecting $ETHERNET to the network"
+	dhcpcd $ETHERNET
+}
+
+##
+##	stop
+##
+##	Stop ethernet connection
+##
+function stop() {
+	## Kill all dhcp clients
+	echo "Stopping network connection on $ETHERNET"
+	killall -9 dhcpcd
+
+	## Set the ethernet interface to down
+	echo "Setting interface $ETHERNET to DOWN"
+	ip link set dev $ETHERNET down
+}
+
+case "$1" in
+	"start")
+	start
+	;;
+	"stop")
+	stop
+	;;
+	"restart")
+	stop
+	start
+	;;
+	*)
+	usage
+	;;
+esac
